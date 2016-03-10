@@ -6,7 +6,7 @@
 
 using namespace indri::api;
 
-bool sortTid(const int& a, const int&b){
+bool sortTid(const int& a, const int& b){
   return (a < b);
 }
 
@@ -67,8 +67,19 @@ int main(int argc, char *argv[]) {
       cout << thisIndex->term(termList->terms()[j]) << " ";
      }
      cout << endl;
-     // cout << parsedDoc->getContent()<<endl;
      sort(termIds.begin(), termIds.end(), sortTid);
+
+     int index = 0;
+     for(int i = 0; i < termIds.size(); ++i){
+
+      if( (termIds[index] == termIds[i]) || (termIds[i] == 0)){
+        continue;
+      }
+      termIds[index] = termIds[i];
+      index ++;
+     }
+     termIds.resize(index + 1);
+
      for(int j=0; j<termIds.size(); ++j){
       cout << termIds[j] << " ";
      }
@@ -77,7 +88,8 @@ int main(int argc, char *argv[]) {
       cout << thisIndex->term(termIds[j]) << " ";
      }
      cout << endl;
-
+     // cout << parsedDoc->getContent()<<endl;
+     // cout << endl;
    }
 
   // note that we do not need to explicitly delete the
