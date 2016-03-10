@@ -1,12 +1,18 @@
 #include <vector>
+#include <string>
+#include <algorithm>
 #include "indri/QueryEnvironment.hpp"
 #include "indri/SnippetBuilder.hpp"
 
 using namespace indri::api;
 
+bool sortTid(const int& a, const int&b){
+  return (a < b);
+}
+
 int main(int argc, char *argv[]) {
    // we assume the index path is the first argument and the query is second
-   char *indexPath=argv[1];
+   // char *indexPath=argv[1];
    // char *query=argv[2];
 
    // our builder object - false in the constructor means no HTML output.
@@ -16,6 +22,7 @@ int main(int argc, char *argv[]) {
    QueryEnvironment indriEnvironment;
 
    // open the index
+   std::string indexPath = "/home/vgc/qi/CIKM2016/clueWeb09_B";
    indriEnvironment.addIndex(indexPath);
 
    indri::collection::Repository repository;
@@ -48,14 +55,29 @@ int main(int argc, char *argv[]) {
      // print the document ID, document name and its content
      cout << documentIDs[i] << endl;
      cout << documentName << endl;
-    for(int j=0; j<termList->terms().size(); ++j){
+     vector <int> termIds;
+     for(int j=0; j<termList->terms().size(); ++j){
+      termIds.push_back(termList->terms()[j]);
+     }
+     for(int j=0; j<termList->terms().size(); ++j){
       cout << termList->terms()[j] << " ";
      }
+     cout << endl;
      for(int j=0; j<termList->terms().size(); ++j){
       cout << thisIndex->term(termList->terms()[j]) << " ";
      }
      cout << endl;
-     cout << parsedDoc->getContent()<<endl;
+     // cout << parsedDoc->getContent()<<endl;
+     sort(termIds.begin(), termIds.end(), sortTid);
+     for(int j=0; j<termIds.size(); ++j){
+      cout << termIds[j] << " ";
+     }
+     cout << endl;
+     for(int j=0; j<termIds.size(); ++j){
+      cout << thisIndex->term(termIds[j]) << " ";
+     }
+     cout << endl;
+
    }
 
   // note that we do not need to explicitly delete the
