@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include "globals.h"
 #include "indri/QueryEnvironment.hpp"
 #include "indri/SnippetBuilder.hpp"
 
@@ -9,8 +10,6 @@ using namespace indri::api;
 bool sortTid(const int& a, const int& b){
   return (a < b);
 }
-
-
 
 void removeDups(vector<int>& termIds){
      int index = 0;
@@ -25,7 +24,7 @@ void removeDups(vector<int>& termIds){
      termIds.resize(index + 1);
 }
 
-void getDeltaList(vector<int>& termIds, vector<int>& deltaList){
+void getDeltaList(vector<int>& termIds, vector<unsigned>& deltaList){
      deltaList.push_back(termIds[0]);
      for(int j = 0; j < termIds.size() - 1; ++j){
         deltaList.push_back( termIds[j+1] - termIds[j]);
@@ -59,6 +58,74 @@ void getTermList(vector<int>& termIds, indri::index::Index *thisIndex, int did){
         termIds.push_back(termList->terms()[j]);
       }
      }
+}
+
+int compressionVbytes(vector<unsigned> input, unsigned char* output){
+   int outputSize = 0;
+   for (int i = 0; i < input.size(); ++i){
+          unsigned char byteArr[CONST::numBytesInInt];
+          bool started = false;
+          int x = 0;
+
+          for (x = 0; x < CONST::numBytesInInt; x++) {
+             byteArr[x] = (input[i]%128);
+             input[i] /= 128;
+          }
+
+            for (x = CONST::numBytesInInt - 1; x > 0; x--) {
+              if (byteArr[x] != 0 || started == true) {
+                started = true;
+               byteArr[x] |= 128;
+                output[outputSize++] =  byteArr[x];
+              }
+            }
+            output[outputSize++] =  byteArr[0];
+   }
+   return outputSize;
+}
+
+int decompressionVbytes(unsigned char* input, unsigned int* output, int size){
+    unsigned char* curr_byte = input;
+    unsigned int n;
+    for (int i = 0; i < size; ++i) {
+      unsigned char b = *curr_byte;
+      n = b & 0x7F;
+//        cout<<"The first byte: "<<n<<endl;
+//        print_binary(n);
+//        cout<<endl;
+
+      while((b & 0x80) !=0){
+        n = n << 7;
+        ++curr_byte;
+          b = *curr_byte;
+          n |= (b & 0x7F);
+//          cout<<"The following byte: "<<n<<endl;
+//          print_binary(n);
+//          cout<<endl;
+      }
+    ++curr_byte;
+    output[i] = n;
+  }
+
+  int num_bytes_consumed = (curr_byte - input);
+  return (num_bytes_consumed >> 2) + ((num_bytes_consumed & 3) != 0 ? 1 : 0);
+}
+
+// Print unsigned integer in binary format with spaces separating each byte.
+void print_binary(unsigned int num) {
+   int arr[32];
+    int i = 0;
+    while (i++ < 32 || num / 2 != 0) {
+      arr[i - 1] = num % 2;
+      num /= 2;
+    }
+
+    for (i = 31; i >= 0; i--) {
+      printf("%d", arr[i]);
+      if (i % 8 == 0)
+        printf(" ");
+    }
+    printf("\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -99,7 +166,7 @@ int main(int argc, char *argv[]) {
 
      vector <int> termIds;
      getTermList(termIds, thisIndex, documentIDs[i]);
-     
+
      // sorting
      sort(termIds.begin(), termIds.end(), sortTid);
 
@@ -111,7 +178,7 @@ int main(int argc, char *argv[]) {
      removeDups(termIds);
 
      // make delta list
-     vector <int> deltaList;
+     vector <unsigned> deltaList;
      getDeltaList(termIds, deltaList);
 
      for(int j=0; j<termIds.size(); ++j){
@@ -128,6 +195,25 @@ int main(int argc, char *argv[]) {
      cout << endl;
      // cout << parsedDoc->getContent()<<endl;
      // cout << endl;
+
+     // unsigned value = 1937;
+     // unsigned char* output = new unsigned char[100];
+     // int size = encodeVarint(value, output); 
+     // cout << size << endl;
+     // unsigned result;
+     // result = decodeVarint(output, size);
+     // cout << result << endl;
+
+     unsigned char * compressed_list = new unsigned char[deltaList.size()*4];
+     unsigned * uncompressed_list = new unsigned[deltaList.size()];
+
+     int compressedSize = compressionVbytes(deltaList, compressed_list);
+     decompressionVbytes(compressed_list, uncompressed_list, deltaList.size());
+
+     for(int j=0; j<deltaList.size(); ++j){
+      cout << uncompressed_list[j] << " ";
+     }
+     cout << endl;
    }
 
   // note that we do not need to explicitly delete the
