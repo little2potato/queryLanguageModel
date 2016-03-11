@@ -1,9 +1,4 @@
-#include <vector>
-#include <string>
-#include <algorithm>
 #include "globals.h"
-#include "indri/QueryEnvironment.hpp"
-#include "indri/SnippetBuilder.hpp"
 
 using namespace indri::api;
 
@@ -72,14 +67,14 @@ int compressionVbytes(vector<unsigned> input, unsigned char* output){
              input[i] /= 128;
           }
 
-            for (x = CONST::numBytesInInt - 1; x > 0; x--) {
-              if (byteArr[x] != 0 || started == true) {
-                started = true;
-               byteArr[x] |= 128;
-                output[outputSize++] =  byteArr[x];
-              }
+          for (x = CONST::numBytesInInt - 1; x > 0; x--) {
+            if (byteArr[x] != 0 || started == true) {
+              started = true;
+              byteArr[x] |= 128;
+              output[outputSize++] =  byteArr[x];
             }
-            output[outputSize++] =  byteArr[0];
+          }
+          output[outputSize++] =  byteArr[0];
    }
    return outputSize;
 }
@@ -140,11 +135,10 @@ int main(int argc, char *argv[]) {
    QueryEnvironment indriEnvironment;
 
    // open the index
-   std::string indexPath = "/home/qi/CIKM2016/indriIndex/smallIndex";
-   indriEnvironment.addIndex(indexPath);
+   indriEnvironment.addIndex(CONST::indexPath);
 
    indri::collection::Repository repository;
-   repository.openRead(indexPath);
+   repository.openRead(CONST::indexPath);
    indri::collection::Repository::index_state repIndexState = repository.indexes();
    indri::index::Index *thisIndex=(*repIndexState)[0];
 
@@ -214,6 +208,8 @@ int main(int argc, char *argv[]) {
       cout << uncompressed_list[j] << " ";
      }
      cout << endl;
+     cout << compressedSize << endl;
+     cout << deltaList.size() * 4 << endl;
    }
 
   // note that we do not need to explicitly delete the
